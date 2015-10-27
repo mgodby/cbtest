@@ -25,16 +25,21 @@ except IndexError:
 
 BASE_DIR = os.path.dirname(__file__)
 CONF_DIR = os.path.join( BASE_DIR, "conf" )
-CONF_FILE = os.path.join( CONF_DIR, env + ".cfg" )
+CONF_FILE = os.path.join( CONF_DIR, "cbtest.cfg" )
+CB_CONF = os.path.join( CONF_DIR, env + ".cfg" )
 TIMESTAMP = int(time.time())
 
 CBKEY="CBTEST" + time.strftime("%I:%M:%S")
-CBVALUE="Hello World"
-TTL=60
+#CBVALUE="Hello World"
+#TTL=60
 
 
-## Read the config file
+## Read the cbtest config file
 with open(CONF_FILE, "r") as fd:
+    testcfg = json.loads(fd.read())
+
+## Read the couchbase config file
+with open(CB_CONF, "r") as fd:
     configs = json.loads(fd.read())
 
 def sendtographite(metrics):
@@ -45,7 +50,7 @@ def sendtographite(metrics):
 
 def add_key(connObj,bucket):
     time1 = time.time()
-    r = connObj.add(CBKEY, CBVALUE, TTL)
+    r = connObj.add(CBKEY, testcfg['cb_value'], testcfg['cb_ttl'])
     time2 = time.time()
     print 'add_key to %s took %0.3f ms' % (bucket, (time2-time1)*1000.0)
     DATA = configs['graphite_prefix'] + '.%s.addLatency %0.3f %d\n ' % (bucket, (time2-time1)*1000.0, TIMESTAMP)
@@ -54,7 +59,7 @@ def add_key(connObj,bucket):
 def get_key(connObj,bucket):
     time1 = time.time()
     r = connObj.get(CBKEY)
-    if r.value == CBVALUE:
+    if r.value == testcfg['cb_value']:
         pass
     else:
         print "key missmatch %s" % r.value
